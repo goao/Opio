@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- ATENÇÃO: Não gerar novos build.xml automaticamente. Este arquivo 
+			  em hipótse alguma deve ser sobrescrito. Possue customizações
+			  para domínio Softon.
+			  
+	TODO:	  Implementar este build.xml em build-user.xml -->
+<project basedir="." default="build" name="softonPack">
+    <property environment="env"/>
+	<property name="JAR_NAME" value="softonPack"/>
+	<property name="mainProject.location" value="../dtec_pf_batch_rn"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.5"/>
+    <property name="source" value="1.5"/>
+    <path id="EAR Libraries.libraryclasspath"/>
+    <path id="softonPack.classpath">
+        <pathelement location="build"/>
+        <path refid="EAR Libraries.libraryclasspath"/>
+		<fileset dir="." >
+    		<include name="lib/*.jar"/>
+    	</fileset>
+		<fileset dir="." >
+    		<include name="lib/drools/*.jar"/>
+    	</fileset>
+    </path>
+    <target name="init">
+        <mkdir dir="build"/>
+        <copy includeemptydirs="false" todir="build">
+            <fileset dir="src" excludes="**/*.launch, **/*.java"/>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="build"/>
+    	<delete dir="target" />
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="prepareTargetDirectory,build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="softonPack.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects">
+        <ant antfile="${dtec_pf_batch_rn}/build.xml" inheritAll="false" target="clean"/>
+        <ant antfile="${dtec_pf_batch_rn.location}/build.xml" inheritAll="false" target="build"/>
+        <ant antfile="${dtecBatch.location}/build.xml" inheritAll="false" target="clean"/>
+        <ant antfile="${dtecBatch.location}/build.xml" inheritAll="false" target="build"/>
+    </target>
+	
+	<!-- Prepare /target Directory -->
+	<target name="prepareTargetDirectory">
+		<echo message="Preparando diretório ./target"/>
+		<delete dir="target" />
+		<mkdir dir="target" />
+		<!--mkdir dir="target/tmp" />
+		<mkdir dir="target/tmp/data" />
+		<mkdir dir="target/tmp/conf" />
+		<mkdir dir="target/tmp/conf/flatResources" />
+		<mkdir dir="target/tmp/lib" />
+		<mkdir dir="target/tmp/bin" />
+		<mkdir dir="target/tmp/log" /-->
+	</target>	
+	
+	
+	<!-- Build the jar file -->
+	<target name="jar" depends="build" >
+		<echo message="Gerando JAR em:  ./target/${JAR_NAME}.jar"/>
+	
+		<pathconvert property="softonPack.manifest.classpath" pathsep=" ">
+			<path refid="softonPack.classpath"/>
+			<mapper>
+				<chainedmapper>
+					<flattenmapper/>
+					<globmapper from="*.jar" to="*.jar"/>
+				</chainedmapper>
+			</mapper>
+		</pathconvert>		
+			
+		<jar jarfile="target/${JAR_NAME}.jar">
+			<fileset dir="build/">
+				<include name="**/*.*"/>
+			</fileset>
+
+			<manifest>
+				<attribute name="Created-By" value="Softon Sistemas Inteligentes" />
+				<attribute name="Class-Path" value="${softonPack.manifest.classpath}" />
+			</manifest>
+		</jar>
+	</target>
+		
+	<!-- Deploy On Main Project -->
+	<target name="deployOnMainProject" depends="jar" >
+		<echo message="Realizando deploy do JAR em:  ${mainProject.location}/target/tmp/lib"/>
+        <copy todir="${mainProject.location}/target/tmp/lib">
+            <fileset dir="target/" includes="${JAR_NAME}.jar" />
+    	</copy>	
+	</target>		
+	
+</project>
